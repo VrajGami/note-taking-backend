@@ -1,4 +1,4 @@
-# Note-Taking Backend — Frontend developer guide
+# Note-Taking Backend 
 
 This document explains the API, authentication flow, media handling (base64), and examples a frontend developer needs to integrate the app.
 
