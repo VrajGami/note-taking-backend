@@ -1,4 +1,4 @@
-# Note-Taking Backend — Frontend & Dev Guide
+# Note-Taking Backend
 
 This repository contains a Node/Express backend for a note-taking app. This README focuses on what frontend developers need to know: API endpoints, authentication flow, media handling (base64/local uploads), and the database schema used by the backend.
 
