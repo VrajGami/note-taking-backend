@@ -1,3 +1,232 @@
+# Note-Taking Backend — Frontend & Dev Guide
+
+This repository contains a Node/Express backend for a note-taking app. This README focuses on what frontend developers need to know: API endpoints, authentication flow, media handling (base64/local uploads), and the database schema used by the backend.
+
+Table of contents
+- Quick start (dev)
+- Authentication
+- API endpoints (Auth, Notes, Folders, Tags, Media)
+- Media upload/download (base64)
+- Database schema (DDL + notes)
+- Production notes & recommendations
+- Troubleshooting
+
+---
+
+## Quick start (dev)
+
+1. Install and start the backend on your machine:
+
+```powershell
+cd "c:\Users\Uesr\OneDrive - UNBC\Desktop\note-taking-backend"
+npm install
+copy .env.example .env
+# edit .env to set JWT_SECRET (or use provided local .env)
+npm start
+```
+
+The backend listens on port 3000 by default (http://localhost:3000). All endpoints are prefixed with `/api`.
+
+---
+
+## Authentication (high level)
+
+- Signup: `POST /api/signup` — Body `{ username, email, password }` (returns created user)
+- Login: `POST /api/login` — Body `{ email, password }` (returns `{ token, user_id }`)
+- Use JWTs for authentication: include header `Authorization: Bearer <token>` on protected requests.
+- Current implementation uses an in-memory token blacklist for logout (single-process only). After logout the token will be rejected by the running instance.
+
+---
+
+## API endpoints
+
+Auth
+- `POST /api/signup` — { username, email, password } -> 201 created user
+- `POST /api/login` — { email, password } -> 200 { token, user_id }
+- `GET /api/me` — protected -> { user_id, email }
+- `POST /api/logout` — protected -> invalidates token (200)
+
+Notes (all protected)
+- `POST /api/notes` — create { note_title, note_content, folder_id }
+- `GET /api/notes` — list notes for authenticated user
+- `GET /api/notes/:id` — get single note (owner only)
+- `PUT /api/notes/:id` — update note
+- `DELETE /api/notes/:id` — delete note
+
+Folders (protected)
+- `POST /api/folders` — create { folder_name, parent_folder_id }
+- `GET /api/folders` — list
+- `GET /api/folders/:id` — get
+- `PUT /api/folders/:id` — update
+- `DELETE /api/folders/:id` — delete
+
+Tags (protected)
+- `POST /api/tags` — create or return existing { tag_name }
+- `GET /api/tags` — list all tags
+- `POST /api/notes/:noteId/tags` — attach tag { tag_id }
+- `DELETE /api/notes/:noteId/tags/:tagId` — detach tag
+
+Media (protected)
+- `POST /api/notes/:noteId/media` — attach media to a note
+  - Options:
+    - `{ file_path: "https://..." }` — store external URL
+    - `{ filename, base64, file_type }` — decode base64 and save locally to `uploads/` then store `/uploads/<file>` in DB
+- `GET /api/notes/:noteId/media` — list media; support `?asBase64=true` to request base64 for local files
+- `DELETE /api/media/:id` — delete media record and local file if present
+
+---
+
+## Media upload/download (frontend guidance)
+
+Client-side flow for base64 uploads (recommended for simple proof-of-concept):
+
+1. User selects a file in the browser.
+2. Convert to data URL in the browser using FileReader.
+3. POST JSON to `/api/notes/:noteId/media` with `{ filename, base64 }`.
+
+Example (browser):
+
+```javascript
+function uploadBase64(file, noteId, token) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = async () => {
+      const base64 = reader.result; // data:[mime];base64,...
+      const resp = await fetch(`/api/notes/${noteId}/media`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+        body: JSON.stringify({ filename: file.name, base64 })
+      });
+      if (!resp.ok) return reject(await resp.text());
+      resolve(await resp.json());
+    };
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+```
+
+Fetching media list with base64 for rendering:
+
+```javascript
+const resp = await fetch(`/api/notes/${noteId}/media?asBase64=true`, { headers: { Authorization: 'Bearer ' + token }});
+const media = await resp.json();
+media.forEach(m => {
+  if (m.base64) {
+    const img = document.createElement('img');
+    img.src = m.base64; // data URL
+    // append image to UI
+  }
+});
+```
+
+Note: For production-scale uploads you should use pre-signed S3/GCS uploads or multipart server uploads. The current local-upload method is for development and small files only.
+
+---
+
+## Database schema (PostgreSQL)
+
+Run these statements (or use your migration tool) to prepare the database. The API assumes these tables and columns exist.
+
+Users table:
+```sql
+CREATE TABLE users (
+    user_id SERIAL PRIMARY KEY,
+    username VARCHAR(50) UNIQUE NOT NULL,
+    email VARCHAR(100) UNIQUE NOT NULL,
+    password_hash VARCHAR(255) NOT NULL,
+    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+);
+```
+
+Folders:
+```sql
+CREATE TABLE folders (
+    folder_id SERIAL PRIMARY KEY,
+    user_id INT NOT NULL,
+    folder_name VARCHAR(255) NOT NULL,
+    parent_folder_id INT,
+    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE,
+    FOREIGN KEY (parent_folder_id) REFERENCES folders(folder_id) ON DELETE CASCADE
+);
+```
+
+Tags:
+```sql
+CREATE TABLE tags (
+    tag_id SERIAL PRIMARY KEY,
+    tag_name VARCHAR(50) UNIQUE NOT NULL
+);
+```
+
+Notes:
+```sql
+CREATE TABLE notes (
+    note_id SERIAL PRIMARY KEY,
+    user_id INT NOT NULL,
+    folder_id INT,
+    note_title VARCHAR(255) NOT NULL,
+    note_content TEXT,
+    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE,
+    FOREIGN KEY (folder_id) REFERENCES folders(folder_id) ON DELETE SET NULL
+);
+```
+
+Note_tags (join table):
+```sql
+CREATE TABLE note_tags (
+    note_id INT NOT NULL,
+    tag_id INT NOT NULL,
+    PRIMARY KEY (note_id, tag_id),
+    FOREIGN KEY (note_id) REFERENCES notes(note_id) ON DELETE CASCADE,
+    FOREIGN KEY (tag_id) REFERENCES tags(tag_id) ON DELETE CASCADE
+);
+```
+
+Media:
+```sql
+CREATE TABLE media (
+    media_id SERIAL PRIMARY KEY,
+    note_id INT NOT NULL,
+    file_path VARCHAR(255) NOT NULL,
+    file_type VARCHAR(50),
+    uploaded_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (note_id) REFERENCES notes(note_id) ON DELETE CASCADE
+);
+```
+
+Schema notes and mapping to endpoints
+- `users` — used by signup/login endpoints and `GET /api/me`.
+- `notes` — primary data model for notes endpoints.
+- `folders` — folders are scoped to a user and nested via `parent_folder_id`.
+- `tags` + `note_tags` — tagging system; endpoints attach/detach tags to notes.
+- `media` — stores paths to files; when uploading base64 the server stores files under `uploads/` and saves `/uploads/<file>` in `file_path`.
+
+How to apply schema
+- Run the SQL using psql: `psql -h <host> -U <user> -d <db> -f schema.sql`
+- Or use your migration tool (recommended for production).
+
+---
+
+## Production notes & recommendations
+- Use object storage (S3/GCS) for media and pre-signed upload URLs or direct server uploads for large files.
+- Use a shared revocation store (Redis) for token blacklist when running multiple instances.
+- Add input validation (`express-validator`/Joi) to all endpoints and add tests.
+- Use HTTPS and secure cookie practices if tokens are stored in browser cookies.
+
+---
+
+## Troubleshooting
+- 401 on protected routes: verify `Authorization` header and token expiry.
+- 404 for notes/folders/media: resource not found or does not belong to authenticated user.
+- If you need additional fields or different response shapes, tell me the exact JSON shape you want and I will update the API and docs.
+
+---
+
+If you want a Postman collection, example curl commands, or migration scripts, I can add those next.
 # Note-Taking Backend 
 
 This document explains the API, authentication flow, media handling (base64), and examples a frontend developer needs to integrate the app.
