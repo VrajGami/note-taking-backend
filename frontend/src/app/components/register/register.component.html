@@ -1,0 +1,107 @@
+﻿<div class="container-fluid vh-100">
+  <div class="row h-100">
+    <div class="col-md-6 d-flex align-items-center justify-content-center bg-success">
+      <div class="text-center text-white">
+        <h1 class="display-4 mb-4">
+          <i class="bi bi-journal-plus"></i>
+          Join NoteTaker
+        </h1>
+        <p class="lead">Start organizing your thoughts today</p>
+      </div>
+    </div>
+    
+    <div class="col-md-6 d-flex align-items-center justify-content-center">
+      <div class="w-100" style="max-width: 400px;">
+        <div class="card shadow">
+          <div class="card-body p-5">
+            <h2 class="text-center mb-4">Create Account</h2>
+            
+            <form [formGroup]="registerForm" (ngSubmit)="onSubmit()">
+              <div class="mb-3">
+                <label for="username" class="form-label">Username</label>
+                <input 
+                  type="text" 
+                  id="username"
+                  class="form-control"
+                  [class.is-invalid]="username?.invalid && username?.touched"
+                  formControlName="username"
+                  placeholder="Enter your username">
+                <div class="invalid-feedback" *ngIf="username?.invalid && username?.touched">
+                  <small *ngIf="username?.errors?.['required']">Username is required</small>
+                  <small *ngIf="username?.errors?.['minlength']">Username must be at least 3 characters</small>
+                </div>
+              </div>
+
+              <div class="mb-3">
+                <label for="email" class="form-label">Email</label>
+                <input 
+                  type="email" 
+                  id="email"
+                  class="form-control"
+                  [class.is-invalid]="email?.invalid && email?.touched"
+                  formControlName="email"
+                  placeholder="Enter your email">
+                <div class="invalid-feedback" *ngIf="email?.invalid && email?.touched">
+                  <small *ngIf="email?.errors?.['required']">Email is required</small>
+                  <small *ngIf="email?.errors?.['email']">Please enter a valid email</small>
+                </div>
+              </div>
+
+              <div class="mb-3">
+                <label for="password" class="form-label">Password</label>
+                <input 
+                  type="password" 
+                  id="password"
+                  class="form-control"
+                  [class.is-invalid]="password?.invalid && password?.touched"
+                  formControlName="password"
+                  placeholder="Enter your password">
+                <div class="invalid-feedback" *ngIf="password?.invalid && password?.touched">
+                  <small *ngIf="password?.errors?.['required']">Password is required</small>
+                  <small *ngIf="password?.errors?.['minlength']">Password must be at least 6 characters</small>
+                </div>
+              </div>
+
+              <div class="mb-3">
+                <label for="confirmPassword" class="form-label">Confirm Password</label>
+                <input 
+                  type="password" 
+                  id="confirmPassword"
+                  class="form-control"
+                  [class.is-invalid]="confirmPassword?.invalid && confirmPassword?.touched"
+                  formControlName="confirmPassword"
+                  placeholder="Confirm your password">
+                <div class="invalid-feedback" *ngIf="confirmPassword?.invalid && confirmPassword?.touched">
+                  <small *ngIf="confirmPassword?.errors?.['required']">Please confirm your password</small>
+                  <small *ngIf="confirmPassword?.errors?.['passwordMismatch']">Passwords do not match</small>
+                </div>
+              </div>
+
+              <div class="alert alert-danger" *ngIf="error">
+                {{ error }}
+              </div>
+
+              <div class="alert alert-success" *ngIf="success">
+                {{ success }}
+              </div>
+
+              <button 
+                type="submit" 
+                class="btn btn-success w-100 mb-3"
+                [disabled]="loading || registerForm.invalid">
+                <span *ngIf="loading" class="spinner-border spinner-border-sm me-2"></span>
+                {{ loading ? 'Creating Account...' : 'Create Account' }}
+              </button>
+
+              <div class="text-center">
+                <p class="mb-0">Already have an account? 
+                  <a routerLink="/login" class="text-decoration-none">Sign in here</a>
+                </p>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

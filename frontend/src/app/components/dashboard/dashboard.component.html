@@ -1,0 +1,127 @@
+﻿<div class="container-fluid h-100">
+  <div class="row h-100">
+    <!-- Sidebar -->
+    <div class="col-md-3 sidebar text-white p-0">
+      <div class="p-3">
+        <!-- Header -->
+        <div class="d-flex align-items-center mb-4">
+          <h4 class="mb-0">
+            <i class="bi bi-journal-text me-2"></i>
+            NoteTaker
+          </h4>
+        </div>
+
+        <!-- User Info -->
+        <div class="mb-4 pb-3 border-bottom border-secondary">
+          <div class="d-flex align-items-center">
+            <i class="bi bi-person-circle fs-3 me-2"></i>
+            <div>
+              <small class="text-light">Welcome back,</small>
+              <div class="fw-bold">{{ currentUser?.email }}</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Search -->
+        <div class="mb-3">
+          <div class="input-group">
+            <span class="input-group-text bg-dark border-secondary text-light">
+              <i class="bi bi-search"></i>
+            </span>
+            <input 
+              type="text" 
+              class="form-control bg-dark border-secondary text-light"
+              placeholder="Search notes..."
+              (input)="onSearchChange($event)"
+              [value]="searchQuery">
+          </div>
+        </div>
+
+        <!-- New Note Button -->
+        <button 
+          class="btn btn-primary w-100 mb-3"
+          (click)="onNewNote()">
+          <i class="bi bi-plus-circle me-2"></i>
+          New Note
+        </button>
+
+        <!-- Folders -->
+        <div class="mb-3">
+          <h6 class="text-uppercase text-muted small">Folders</h6>
+          <ul class="nav nav-pills flex-column">
+            <li class="nav-item">
+              <a 
+                class="nav-link text-light"
+                [class.active]="!selectedFolder"
+                (click)="onFolderSelected(null)"
+                style="cursor: pointer;">
+                <i class="bi bi-journal me-2"></i>
+                All Notes
+              </a>
+            </li>
+            <li class="nav-item" *ngFor="let folder of folders">
+              <a 
+                class="nav-link text-light"
+                [class.active]="selectedFolder?.folder_id === folder.folder_id"
+                (click)="onFolderSelected(folder)"
+                style="cursor: pointer;">
+                <i class="bi bi-folder me-2"></i>
+                {{ folder.folder_name }}
+              </a>
+            </li>
+          </ul>
+        </div>
+
+        <!-- Logout Button -->
+        <div class="mt-auto pt-3 border-top border-secondary">
+          <button class="btn btn-outline-light w-100" (click)="logout()">
+            <i class="bi bi-box-arrow-right me-2"></i>
+            Logout
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="col-md-9 p-0">
+      <div class="row h-100">
+        <!-- Notes List -->
+        <div class="col-md-4 border-end bg-white p-3">
+          <div class="d-flex align-items-center justify-content-between mb-3">
+            <h5 class="mb-0">
+              {{ selectedFolder ? selectedFolder.folder_name : 'All Notes' }}
+            </h5>
+            <small class="text-muted">
+              {{ getFilteredNotes().length }} notes
+            </small>
+          </div>
+
+          <div *ngIf="loading" class="loading-spinner">
+            <div class="spinner-border text-primary" role="status">
+              <span class="visually-hidden">Loading...</span>
+            </div>
+          </div>
+
+          <app-note-list
+            *ngIf="!loading"
+            [notes]="getFilteredNotes()"
+            [selectedNote]="selectedNote"
+            (noteSelected)="onNoteSelected($event)"
+            (noteDeleted)="onNoteDeleted()">
+          </app-note-list>
+        </div>
+
+        <!-- Note Editor -->
+        <div class="col-md-8 bg-light">
+          <app-note-editor
+            [note]="selectedNote"
+            [isCreating]="isCreatingNote"
+            [folders]="folders"
+            (noteSaved)="onNoteSaved($event)"
+            (noteDeleted)="onNoteDeleted()">
+          </app-note-editor>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
