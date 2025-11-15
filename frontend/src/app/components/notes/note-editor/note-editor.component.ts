@@ -5,6 +5,7 @@ import { FormsModule } from '@angular/forms';
 import { Note, NotesService } from '../../../services/notes.service';
 import { Folder } from '../../../services/folders.service';
 import { ChangeDetectorRef } from '@angular/core';
+import { ConfirmationDialogComponent } from '../../shared/confirmation-dialog/confirmation-dialog.component';
 
 declare var webkitSpeechRecognition: any;
 interface NoteForm {
@@ -15,7 +16,7 @@ interface NoteForm {
 
 @Component({
   selector: 'app-note-editor',
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, ConfirmationDialogComponent],
   templateUrl: './note-editor.component.html',
   styleUrl: './note-editor.component.css'
 })
@@ -46,6 +47,9 @@ export class NoteEditorComponent implements OnChanges {
   autoSaveTimer: any;
   selectedNote: Note | null = null;
   liveInterim = '';
+  
+  // Confirmation dialog state
+  showDeleteDialog = false;
 
 
   constructor(private notesService: NotesService,
@@ -240,24 +244,42 @@ selectNote(note: Note) {
 
 deleteNote(): void {
   if (!this.note) return;
+  
+  // Show confirmation dialog
+  this.showDeleteDialog = true;
+}
 
-  if (confirm(`Are you sure you want to delete "${this.note.note_title}"?`)) {
-    this.notesService.deleteNote(this.note.note_id).subscribe({
-      next: () => {
-        console.log('Note deleted successfully');
+confirmDeleteNote(): void {
+  if (!this.note) return;
 
-        // Reset UI immediately
-        this.clearEditor();
+  this.notesService.deleteNote(this.note.note_id).subscribe({
+    next: () => {
+      console.log('Note deleted successfully');
+      
+      // Close dialog
+      this.showDeleteDialog = false;
 
-        // Then notify parent
-        this.noteDeleted.emit();
-      },
-      error: (error) => {
-        console.error('Error deleting note:', error);
-        this.error = error.error?.error || 'Failed to delete note';
-      }
-    });
-  }
+      // Reset UI immediately
+      this.clearEditor();
+
+      // Then notify parent
+      this.noteDeleted.emit();
+    },
+    error: (error) => {
+      console.error('Error deleting note:', error);
+      this.showDeleteDialog = false;
+      this.error = error.error?.error || 'Failed to delete note';
+    }
+  });
+}
+
+cancelDeleteNote(): void {
+  this.showDeleteDialog = false;
+}
+
+getDeleteMessage(): string {
+  if (!this.note) return 'Are you sure you want to delete this note?';
+  return `Are you sure you want to delete "${this.note.note_title}"?`;
 }
 
 private clearEditor(): void {

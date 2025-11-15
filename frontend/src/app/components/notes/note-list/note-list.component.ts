@@ -3,10 +3,11 @@ import { CommonModule } from '@angular/common';
 import { Note } from '../../../services/notes.service';
 import { NotesService } from '../../../services/notes.service';
 import { Folder } from '../../../services/folders.service';
+import { ConfirmationDialogComponent } from '../../shared/confirmation-dialog/confirmation-dialog.component';
 
 @Component({
   selector: 'app-note-list',
-  imports: [CommonModule],
+  imports: [CommonModule, ConfirmationDialogComponent],
   templateUrl: './note-list.component.html',
   styleUrl: './note-list.component.css'
 })
@@ -15,7 +16,11 @@ export class NoteListComponent {
   @Input() selectedNote: Note | null = null;
   @Output() noteSelected = new EventEmitter<Note>();
   @Output() noteDeleted = new EventEmitter<void>();
-draggedNote: Note | null = null;
+  draggedNote: Note | null = null;
+  
+  // Confirmation dialog state
+  showDeleteDialog = false;
+  noteToDelete: Note | null = null;
   constructor(private notesService: NotesService) {}
 
   onNoteClick(note: Note): void {
@@ -25,17 +30,37 @@ draggedNote: Note | null = null;
   onDeleteNote(event: Event, note: Note): void {
     event.stopPropagation();
     
-    if (confirm(`Are you sure you want to delete "${note.note_title}"?`)) {
-      this.notesService.deleteNote(note.note_id).subscribe({
-        next: () => {
-          this.noteDeleted.emit();
-        },
-        error: (error) => {
-          console.error('Error deleting note:', error);
-          alert('Failed to delete note. Please try again.');
-        }
-      });
-    }
+    // Show confirmation dialog
+    this.noteToDelete = note;
+    this.showDeleteDialog = true;
+  }
+  
+  confirmDeleteNote(): void {
+    if (!this.noteToDelete) return;
+    
+    this.notesService.deleteNote(this.noteToDelete.note_id).subscribe({
+      next: () => {
+        this.showDeleteDialog = false;
+        this.noteToDelete = null;
+        this.noteDeleted.emit();
+      },
+      error: (error) => {
+        console.error('Error deleting note:', error);
+        this.showDeleteDialog = false;
+        this.noteToDelete = null;
+        alert('Failed to delete note. Please try again.');
+      }
+    });
+  }
+  
+  cancelDeleteNote(): void {
+    this.showDeleteDialog = false;
+    this.noteToDelete = null;
+  }
+  
+  getDeleteMessage(): string {
+    if (!this.noteToDelete) return 'Are you sure you want to delete this note?';
+    return `Are you sure you want to delete "${this.noteToDelete.note_title}"?`;
   }
   onDragStart(note: Note) {
   this.draggedNote = note;

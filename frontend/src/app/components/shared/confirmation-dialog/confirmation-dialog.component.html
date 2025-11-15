@@ -1,0 +1,25 @@
+<div *ngIf="isVisible" class="modal-backdrop-custom" (click)="onBackdropClick($event)">
+  <div class="modal-dialog-custom">
+    <div class="modal-content-custom">
+      <div class="modal-header-custom">
+        <h5 class="modal-title">{{ title }}</h5>
+        <button type="button" class="btn-close-custom" (click)="onCancel()" aria-label="Close">
+          <i class="bi bi-x-lg"></i>
+        </button>
+      </div>
+      
+      <div class="modal-body-custom">
+        <p>{{ message }}</p>
+      </div>
+      
+      <div class="modal-footer-custom">
+        <button type="button" class="btn btn-secondary" (click)="onCancel()">
+          {{ cancelText }}
+        </button>
+        <button type="button" class="btn" [ngClass]="confirmButtonClass" (click)="onConfirm()">
+          {{ confirmText }}
+        </button>
+      </div>
+    </div>
+  </div>
+</div>

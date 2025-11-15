@@ -175,3 +175,15 @@
 
   </div>
 </div>
+
+<!-- Confirmation Dialog -->
+<app-confirmation-dialog
+  [isVisible]="showDeleteDialog"
+  title="Delete Folder"
+  [message]="getDeleteMessage()"
+  confirmText="Delete"
+  cancelText="Cancel"
+  confirmButtonClass="btn-danger"
+  (confirmed)="confirmDeleteFolder()"
+  (cancelled)="cancelDeleteFolder()">
+</app-confirmation-dialog>

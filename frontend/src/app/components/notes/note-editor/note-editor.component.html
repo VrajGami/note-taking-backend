@@ -137,3 +137,15 @@
     <p>Select a note from the list or create a new one to start writing.</p>
   </div>
 </div>
+
+<!-- Confirmation Dialog -->
+<app-confirmation-dialog
+  [isVisible]="showDeleteDialog"
+  title="Delete Note"
+  [message]="getDeleteMessage()"
+  confirmText="Delete"
+  cancelText="Cancel"
+  confirmButtonClass="btn-danger"
+  (confirmed)="confirmDeleteNote()"
+  (cancelled)="cancelDeleteNote()">
+</app-confirmation-dialog>

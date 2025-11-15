@@ -6,11 +6,12 @@ import { NotesService, Note } from '../../services/notes.service';
 import { FoldersService, Folder } from '../../services/folders.service';
 import { NoteListComponent } from '../notes/note-list/note-list.component';
 import { NoteEditorComponent } from '../notes/note-editor/note-editor.component';
+import { ConfirmationDialogComponent } from '../shared/confirmation-dialog/confirmation-dialog.component';
 
 
 @Component({
   selector: 'app-dashboard',
-  imports: [CommonModule, NoteListComponent, NoteEditorComponent],
+  imports: [CommonModule, NoteListComponent, NoteEditorComponent, ConfirmationDialogComponent],
   templateUrl: './dashboard.component.html',
   styleUrl: './dashboard.component.css',
 })
@@ -26,6 +27,10 @@ export class DashboardComponent implements OnInit {
   draggedNote: Note | null = null;
   newFolderName = '';
   newParentFolderId: number | null = null;
+  
+  // Confirmation dialog state
+  showDeleteDialog = false;
+  folderToDelete: Folder | null = null;
 
 
   constructor(
@@ -68,26 +73,46 @@ export class DashboardComponent implements OnInit {
 
 onDeleteFolder(folder: any) {
   if (!folder) return;
+  
+  // Show confirmation dialog
+  this.folderToDelete = folder;
+  this.showDeleteDialog = true;
+}
 
-  if (!confirm(`Delete folder "${folder.folder_name}"? All notes inside will be kept but unassigned.`)) {
-    return;
-  }
+confirmDeleteFolder() {
+  if (!this.folderToDelete) return;
 
-  this.foldersService.deleteFolder(folder.folder_id).subscribe({
+  this.foldersService.deleteFolder(this.folderToDelete.folder_id).subscribe({
     next: (res) => {
       // remove folder from array
-      this.folders = this.folders.filter(f => f.folder_id !== folder.folder_id);
+      this.folders = this.folders.filter(f => f.folder_id !== this.folderToDelete!.folder_id);
 
       // if deleted folder was selected, reset selection
-      if (this.selectedFolder?.folder_id === folder.folder_id) {
+      if (this.selectedFolder?.folder_id === this.folderToDelete!.folder_id) {
         this.selectedFolder = null;
       }
+      
+      // Close dialog and reset
+      this.showDeleteDialog = false;
+      this.folderToDelete = null;
     },
     error: (err) => {
       console.error("Failed to delete folder:", err);
+      this.showDeleteDialog = false;
+      this.folderToDelete = null;
       alert("Could not delete folder. Try again.");
     }
   });
+}
+
+cancelDeleteFolder() {
+  this.showDeleteDialog = false;
+  this.folderToDelete = null;
+}
+
+getDeleteMessage(): string {
+  if (!this.folderToDelete) return 'Are you sure you want to delete this folder?';
+  return `Are you sure you want to delete folder "${this.folderToDelete.folder_name}"? All notes inside will be kept but unassigned.`;
 }
 
 
