@@ -66,6 +66,30 @@ export class DashboardComponent implements OnInit {
   });
 }
 
+onDeleteFolder(folder: any) {
+  if (!folder) return;
+
+  if (!confirm(`Delete folder "${folder.folder_name}"? All notes inside will be kept but unassigned.`)) {
+    return;
+  }
+
+  this.foldersService.deleteFolder(folder.folder_id).subscribe({
+    next: (res) => {
+      // remove folder from array
+      this.folders = this.folders.filter(f => f.folder_id !== folder.folder_id);
+
+      // if deleted folder was selected, reset selection
+      if (this.selectedFolder?.folder_id === folder.folder_id) {
+        this.selectedFolder = null;
+      }
+    },
+    error: (err) => {
+      console.error("Failed to delete folder:", err);
+      alert("Could not delete folder. Try again.");
+    }
+  });
+}
+
 
   private loadUserData(): void {
     this.authService.getCurrentUser().subscribe({

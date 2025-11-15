@@ -7,7 +7,9 @@
 
         <!-- Header -->
         <div class="d-flex align-items-center mb-4">
-          <h4 class="mb-0"><i class="bi bi-journal-text me-2"></i> NoteTaker</h4>
+          <h4 class="mb-0">
+            <i class="bi bi-journal-text me-2"></i> NoteTaker
+          </h4>
         </div>
 
         <!-- User Info -->
@@ -66,45 +68,56 @@
                 </a>
               </li>
 
-              <!-- Root folders -->
+              <!-- ROOT FOLDERS -->
               <ng-container *ngFor="let folder of folders">
                 <li class="nav-item"
                     *ngIf="!folder.parent_folder_id"
                     [style.paddingLeft.px]="getFolderDepth(folder.folder_id) * 15">
 
-                  <a class="nav-link text-light"
-                     [class.active]="selectedFolder?.folder_id === folder.folder_id"
-                     (click)="onFolderSelected(folder)"
-                     (dragover)="onFolderDragOver($event)"
-                     (drop)="onFolderDrop(folder)"
-                     style="cursor:pointer">
+                  <!-- Folder Row WITH DELETE BUTTON -->
+                  <div class="d-flex justify-content-between align-items-center nav-link text-light"
+     [class.active]="selectedFolder?.folder_id === folder.folder_id"
+     (click)="onFolderSelected(folder)"
+     style="cursor:pointer;">
 
-                    <i class="bi bi-folder me-2"></i>
-                    {{ folder.folder_name }}
-                  </a>
+  <span>
+    <i class="bi bi-folder me-2"></i>
+    {{ folder.folder_name }}
+  </span>
+
+  <i class="bi bi-trash text-danger ms-2"
+     (click)="onDeleteFolder(folder); $event.stopPropagation();"
+     style="cursor:pointer"></i>
+</div>
+
 
                   <!-- Subfolders -->
                   <ng-container *ngTemplateOutlet="folderTemplate; context:{ parentId: folder.folder_id }"></ng-container>
                 </li>
               </ng-container>
 
-              <!-- recursive template -->
+              <!-- Recursive template -->
               <ng-template #folderTemplate let-parentId="parentId">
                 <ng-container *ngFor="let sub of folders">
                   <li class="nav-item"
                       *ngIf="sub.parent_folder_id === parentId"
                       [style.paddingLeft.px]="getFolderDepth(sub.folder_id) * 15">
 
-                    <a class="nav-link text-light"
-                       [class.active]="selectedFolder?.folder_id === sub.folder_id"
-                       (click)="onFolderSelected(sub)"
-                       (dragover)="onFolderDragOver($event)"
-                       (drop)="onFolderDrop(sub)"
-                       style="cursor:pointer">
+                    <!-- Folder Row WITH DELETE BUTTON -->
+                    <div class="d-flex justify-content-between align-items-center nav-link text-light"
+                         [class.active]="selectedFolder?.folder_id === sub.folder_id"
+                         style="cursor:pointer;">
 
-                      <i class="bi bi-folder me-2"></i>
-                      {{ sub.folder_name }}
-                    </a>
+                      <div (click)="onFolderSelected(sub)">
+                        <i class="bi bi-folder me-2"></i>
+                        {{ sub.folder_name }}
+                      </div>
+
+                      <!-- Delete -->
+                      <i class="bi bi-trash text-danger ms-2"
+                         (click)="onDeleteFolder(sub); $event.stopPropagation();"
+                         style="cursor:pointer"></i>
+                    </div>
 
                     <ng-container *ngTemplateOutlet="folderTemplate; context:{ parentId: sub.folder_id }"></ng-container>
                   </li>
@@ -123,10 +136,10 @@
           </button>
         </div>
 
-      </div> <!-- END flex column -->
-    </div> <!-- END sidebar -->
+      </div>
+    </div>
 
-    <!-- ⭐⭐⭐ MAIN CONTENT MUST BE OUTSIDE SIDEBAR ⭐⭐⭐ -->
+    <!-- ⭐ MAIN CONTENT ⭐ -->
     <div class="col-md-9 p-0">
       <div class="row h-100">
 
@@ -145,7 +158,7 @@
           </app-note-list>
         </div>
 
-        <!-- Note Editor -->
+        <!-- Editor -->
         <div class="col-md-8 bg-light">
           <app-note-editor
             [note]="selectedNote"
@@ -160,5 +173,5 @@
       </div>
     </div>
 
-  </div> <!-- END row -->
-</div> <!-- END container -->
+  </div>
+</div>
