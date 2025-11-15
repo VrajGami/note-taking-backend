@@ -5,7 +5,7 @@ import { Observable, BehaviorSubject, tap } from 'rxjs';
 export interface Folder {
   folder_id: number;
   folder_name: string;
-  parent_folder_id?: number;
+  parent_folder_id: number;
   user_id: number;
   created_at: string;
 }
@@ -62,7 +62,7 @@ export class FoldersService {
       );
   }
 
-  private refreshFolders(): void {
+   refreshFolders(): void {
     this.getAllFolders().subscribe();
   }
 

@@ -2,6 +2,7 @@
 import { CommonModule } from '@angular/common';
 import { Note } from '../../../services/notes.service';
 import { NotesService } from '../../../services/notes.service';
+import { Folder } from '../../../services/folders.service';
 
 @Component({
   selector: 'app-note-list',
@@ -14,7 +15,7 @@ export class NoteListComponent {
   @Input() selectedNote: Note | null = null;
   @Output() noteSelected = new EventEmitter<Note>();
   @Output() noteDeleted = new EventEmitter<void>();
-
+draggedNote: Note | null = null;
   constructor(private notesService: NotesService) {}
 
   onNoteClick(note: Note): void {
@@ -36,6 +37,40 @@ export class NoteListComponent {
       });
     }
   }
+  onDragStart(note: Note) {
+  this.draggedNote = note;
+}
+
+onDragEnd() {
+  this.draggedNote = null;
+}
+
+onFolderDragOver(event: DragEvent) {
+  event.preventDefault(); // Required to allow dropping
+}
+
+onFolderDrop(folder: Folder | null) {
+  event?.preventDefault();
+
+  if (!this.draggedNote) return;
+
+  const targetFolderId = folder ? folder.folder_id : undefined;
+
+  this.notesService.updateNote(this.draggedNote.note_id, {
+    note_title: this.draggedNote.note_title,
+    note_content: this.draggedNote.note_content,
+    folder_id: targetFolderId
+  }).subscribe({
+    next: (updatedNote) => {
+      // Immediately update front-end list
+      const idx = this.notes.findIndex(n => n.note_id === updatedNote.note_id);
+      if (idx !== -1) this.notes[idx] = updatedNote;
+
+      this.draggedNote = null;
+    },
+    error: err => console.error("Move failed:", err)
+  });
+}
 
   formatDate(dateString: string): string {
     const date = new Date(dateString);

@@ -1,5 +1,7 @@
 // server.js
 // Load config early so missing env variables fail fast
+require("dotenv").config();
+
 const config = require('./config');
 
 const express = require('express');

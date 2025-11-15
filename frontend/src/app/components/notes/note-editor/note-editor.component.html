@@ -36,6 +36,13 @@
           title="Delete note">
           <i class="bi bi-trash"></i>
         </button>
+        <button
+          type="button"
+          class="btn btn-outline-secondary"
+          (click)="toggleRecording()"
+          title="Record voice">
+          <i class="bi" [ngClass]="isRecording ? 'bi-mic-fill text-danger' : 'bi-mic'"></i>
+        </button>
 
         <button
           *ngIf="isEditing || isCreating"
@@ -57,13 +64,15 @@
     <div class="row mb-3">
       <div class="col-md-8">
         <input
-          type="text"
-          class="form-control form-control-lg"
-          placeholder="Note title..."
-          [(ngModel)]="noteForm.note_title"
-          (ngModelChange)="onContentChange()"
-          [readonly]="!isEditing && !isCreating"
-          [class.is-invalid]="!noteForm.note_title.trim() && (isEditing || isCreating)">
+        #titleInput
+        type="text"
+        class="form-control form-control-lg"
+        placeholder="Note title..."
+        [(ngModel)]="noteForm.note_title"
+        (ngModelChange)="onContentChange()"
+        [readonly]="!isEditing && !isCreating"
+        [class.is-invalid]="!noteForm.note_title.trim() && (isEditing || isCreating)">
+
         <div class="invalid-feedback" *ngIf="!noteForm.note_title.trim() && (isEditing || isCreating)">
           <small>Title is required</small>
         </div>
@@ -86,14 +95,17 @@
 
   <!-- Editor Content -->
   <div class="editor-content flex-grow-1 p-3">
-    <textarea
-      class="form-control note-editor border-0 h-100"
-      placeholder="Start writing your note..."
-      [(ngModel)]="noteForm.note_content"
-      (ngModelChange)="onContentChange()"
-      [readonly]="!isEditing && !isCreating"
-      style="resize: none; font-family: 'Segoe UI', system-ui, sans-serif; font-size: 16px; line-height: 1.6;">
-    </textarea>
+  <textarea
+  class="form-control note-editor border-0 h-100"
+  placeholder="Start writing your note..."
+  [value]="noteForm.note_content + liveInterim"
+  (input)="onTextChanged($event)"
+  (blur)="commitInterim()"
+  [readonly]="!isEditing && !isCreating"
+  style="resize: none; font-family: 'Segoe UI', system-ui, sans-serif; font-size: 16px; line-height: 1.6;">
+</textarea>
+
+
   </div>
 
   <!-- Editor Footer -->
