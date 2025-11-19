@@ -1,482 +1,510 @@
-# Note-Taking Backend
+# 📝 Note-Taking Application
 
-This repository contains a Node/Express backend for a note-taking app. This README focuses on what frontend developers need to know: API endpoints, authentication flow, media handling (base64/local uploads), and the database schema used by the backend.
+A full-stack note-taking application built with **Angular** (frontend) and **Node.js/Express** (backend) with **PostgreSQL** database.
 
-Table of contents
-- Quick start (dev)
-- Authentication
-- API endpoints (Auth, Notes, Folders, Tags, Media)
-- Media upload/download (base64)
-- Database schema (DDL + notes)
-- Production notes & recommendations
-- Troubleshooting
+## 🚀 Features
 
----
+### User Management
+- ✅ User registration and login
+- ✅ JWT-based authentication
+- ✅ Secure password hashing with bcrypt
+- ✅ Session management
 
-## Quick start (dev)
+### Note Management
+- ✅ Create, read, update, delete notes
+- ✅ Rich text editing
+- ✅ Auto-save functionality (2-second debounce)
+- ✅ Real-time search
+- ✅ Character and word count
 
-1. Install and start the backend on your machine:
+### Organization
+- ✅ Folder system with nested folders support
+- ✅ Drag and drop notes to folders
+- ✅ Tag system for categorization
+- ✅ Color-coded tags
 
-```powershell
-cd "c:\Users\Uesr\OneDrive - UNBC\Desktop\note-taking-backend"
-npm install
-copy .env.example .env
-# edit .env to set JWT_SECRET (or use provided local .env)
-npm start
-```
-
-The backend listens on port 3000 by default (http://localhost:3000). All endpoints are prefixed with `/api`.
-
----
-
-## Authentication (high level)
-
-- Signup: `POST /api/signup` — Body `{ username, email, password }` (returns created user)
-- Login: `POST /api/login` — Body `{ email, password }` (returns `{ token, user_id }`)
-- Use JWTs for authentication: include header `Authorization: Bearer <token>` on protected requests.
-- Current implementation uses an in-memory token blacklist for logout (single-process only). After logout the token will be rejected by the running instance.
+### User Interface
+- ✅ Responsive design (mobile, tablet, desktop)
+- ✅ Custom confirmation dialogs
+- ✅ Dark sidebar with modern UI
+- ✅ Hot Module Replacement (HMR)
 
 ---
 
-## API endpoints
+## 🛠️ Tech Stack
 
-Auth
-- `POST /api/signup` — { username, email, password } -> 201 created user
-- `POST /api/login` — { email, password } -> 200 { token, user_id }
-- `GET /api/me` — protected -> { user_id, email }
-- `POST /api/logout` — protected -> invalidates token (200)
+### Frontend
+- **Framework**: Angular 19.0.0
+- **Language**: TypeScript 5.7.2
+- **Styling**: CSS3 + Bootstrap 5.3.8
+- **Icons**: Bootstrap Icons 1.13.1
+- **HTTP Client**: Angular HttpClient
+- **State Management**: RxJS (BehaviorSubjects, Observables)
 
-Notes (all protected)
-- `POST /api/notes` — create { note_title, note_content, folder_id }
-- `GET /api/notes` — list notes for authenticated user
-- `GET /api/notes/:id` — get single note (owner only)
-- `PUT /api/notes/:id` — update note
-- `DELETE /api/notes/:id` — delete note
-
-Folders (protected)
-- `POST /api/folders` — create { folder_name, parent_folder_id }
-- `GET /api/folders` — list
-- `GET /api/folders/:id` — get
-- `PUT /api/folders/:id` — update
-- `DELETE /api/folders/:id` — delete
-
-Tags (protected)
-- `POST /api/tags` — create or return existing { tag_name }
-- `GET /api/tags` — list all tags
-- `POST /api/notes/:noteId/tags` — attach tag { tag_id }
-- `DELETE /api/notes/:noteId/tags/:tagId` — detach tag
-
-Media (protected)
-- `POST /api/notes/:noteId/media` — attach media to a note
-  - Options:
-    - `{ file_path: "https://..." }` — store external URL
-    - `{ filename, base64, file_type }` — decode base64 and save locally to `uploads/` then store `/uploads/<file>` in DB
-- `GET /api/notes/:noteId/media` — list media; support `?asBase64=true` to request base64 for local files
-- `DELETE /api/media/:id` — delete media record and local file if present
+### Backend
+- **Runtime**: Node.js
+- **Framework**: Express 5.1.0
+- **Database**: PostgreSQL 18
+- **ORM**: pg (node-postgres) 8.16.3
+- **Authentication**: JWT (jsonwebtoken 9.0.2)
+- **Password Hashing**: bcrypt 6.0.0
+- **Environment**: dotenv 16.3.1
+- **CORS**: cors 2.8.5
 
 ---
 
-## Media upload/download (frontend guidance)
+## 📋 Prerequisites
 
-Client-side flow for base64 uploads (recommended for simple proof-of-concept):
+Before you begin, ensure you have the following installed:
 
-1. User selects a file in the browser.
-2. Convert to data URL in the browser using FileReader.
-3. POST JSON to `/api/notes/:noteId/media` with `{ filename, base64 }`.
-
-Example (browser):
-
-```javascript
-function uploadBase64(file, noteId, token) {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = async () => {
-      const base64 = reader.result; // data:[mime];base64,...
-      const resp = await fetch(`/api/notes/${noteId}/media`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
-        body: JSON.stringify({ filename: file.name, base64 })
-      });
-      if (!resp.ok) return reject(await resp.text());
-      resolve(await resp.json());
-    };
-    reader.onerror = reject;
-    reader.readAsDataURL(file);
-  });
-}
-```
-
-Fetching media list with base64 for rendering:
-
-```javascript
-const resp = await fetch(`/api/notes/${noteId}/media?asBase64=true`, { headers: { Authorization: 'Bearer ' + token }});
-const media = await resp.json();
-media.forEach(m => {
-  if (m.base64) {
-    const img = document.createElement('img');
-    img.src = m.base64; // data URL
-    // append image to UI
-  }
-});
-```
-
-Note: For production-scale uploads you should use pre-signed S3/GCS uploads or multipart server uploads. The current local-upload method is for development and small files only.
+- **Node.js** (v18 or higher) - [Download](https://nodejs.org/)
+- **npm** (comes with Node.js)
+- **PostgreSQL** (v16 or higher) - [Download](https://www.postgresql.org/download/)
+- **Git** - [Download](https://git-scm.com/)
+- **Angular CLI** (optional but recommended):
+  ```bash
+  npm install -g @angular/cli
+  ```
 
 ---
 
-## Database schema (PostgreSQL)
+## 🚀 Installation & Setup
 
-Run these statements (or use your migration tool) to prepare the database. The API assumes these tables and columns exist.
+### Step 1: Clone the Repository
 
-Users table:
-```sql
-CREATE TABLE users (
-    user_id SERIAL PRIMARY KEY,
-    username VARCHAR(50) UNIQUE NOT NULL,
-    email VARCHAR(100) UNIQUE NOT NULL,
-    password_hash VARCHAR(255) NOT NULL,
-    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
-);
+```bash
+git clone https://github.com/VrajGami/note-taking-backend.git
+cd note-taking-backend
 ```
 
-Folders:
-```sql
-CREATE TABLE folders (
-    folder_id SERIAL PRIMARY KEY,
-    user_id INT NOT NULL,
-    folder_name VARCHAR(255) NOT NULL,
-    parent_folder_id INT,
-    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE,
-    FOREIGN KEY (parent_folder_id) REFERENCES folders(folder_id) ON DELETE CASCADE
-);
+### Step 2: Set Up PostgreSQL Database
+
+#### Option A: Using psql Command Line
+
+1. **Create a PostgreSQL user:**
+   ```bash
+   # On Windows (PowerShell):
+   & "C:\Program Files\PostgreSQL\18\bin\createuser.exe" -U postgres notes_user -P
+   
+   # On Mac/Linux:
+   sudo -u postgres createuser notes_user -P
+   ```
+   Enter password: `StrongLocalPassword123!`
+
+2. **Create the database:**
+   ```bash
+   # On Windows (PowerShell):
+   & "C:\Program Files\PostgreSQL\18\bin\createdb.exe" -U postgres -O notes_user notes_db
+   
+   # On Mac/Linux:
+   sudo -u postgres createdb -O notes_user notes_db
+   ```
+
+3. **Run the schema:**
+   ```bash
+   # On Windows (PowerShell):
+   $env:PGPASSWORD='StrongLocalPassword123!'; & "C:\Program Files\PostgreSQL\18\bin\psql.exe" -U notes_user -d notes_db -f schema.sql
+   
+   # On Mac/Linux:
+   PGPASSWORD='StrongLocalPassword123!' psql -U notes_user -d notes_db -f schema.sql
+   ```
+
+#### Option B: Using pgAdmin GUI
+
+1. Open pgAdmin
+2. Right-click on "Login/Group Roles" → Create → Login/Group Role
+   - Name: `notes_user`
+   - Password: `StrongLocalPassword123!`
+   - Privileges: Can login = Yes
+3. Right-click on "Databases" → Create → Database
+   - Database: `notes_db`
+   - Owner: `notes_user`
+4. Open Query Tool and paste the contents of `schema.sql`, then execute
+
+### Step 3: Configure Environment Variables
+
+Create a `.env` file in the root directory:
+
+```bash
+# Copy the example
+cp .env.example .env  # Linux/Mac
+copy .env.example .env  # Windows
 ```
 
-Tags:
-```sql
-CREATE TABLE tags (
-    tag_id SERIAL PRIMARY KEY,
-    tag_name VARCHAR(50) UNIQUE NOT NULL
-);
+Or create `.env` manually with these contents:
+
+```env
+NODE_ENV=development
+PORT=3000
+
+# JWT
+JWT_SECRET=dev-super-secret-change-me
+JWT_EXPIRES_IN=1d
+SALT_ROUNDS=10
+
+# PostgreSQL
+DATABASE_URL=postgres://notes_user:StrongLocalPassword123!@localhost:5432/notes_db
+
+# Upload directory
+UPLOAD_DIR=uploads
 ```
 
-Notes:
-```sql
-CREATE TABLE notes (
-    note_id SERIAL PRIMARY KEY,
-    user_id INT NOT NULL,
-    folder_id INT,
-    note_title VARCHAR(255) NOT NULL,
-    note_content TEXT,
-    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE,
-    FOREIGN KEY (folder_id) REFERENCES folders(folder_id) ON DELETE SET NULL
-);
-```
+### Step 4: Install Backend Dependencies
 
-Note_tags (join table):
-```sql
-CREATE TABLE note_tags (
-    note_id INT NOT NULL,
-    tag_id INT NOT NULL,
-    PRIMARY KEY (note_id, tag_id),
-    FOREIGN KEY (note_id) REFERENCES notes(note_id) ON DELETE CASCADE,
-    FOREIGN KEY (tag_id) REFERENCES tags(tag_id) ON DELETE CASCADE
-);
-```
-
-Media:
-```sql
-CREATE TABLE media (
-    media_id SERIAL PRIMARY KEY,
-    note_id INT NOT NULL,
-    file_path VARCHAR(255) NOT NULL,
-    file_type VARCHAR(50),
-    uploaded_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (note_id) REFERENCES notes(note_id) ON DELETE CASCADE
-);
-```
-
-Schema notes and mapping to endpoints
-- `users` — used by signup/login endpoints and `GET /api/me`.
-- `notes` — primary data model for notes endpoints.
-- `folders` — folders are scoped to a user and nested via `parent_folder_id`.
-- `tags` + `note_tags` — tagging system; endpoints attach/detach tags to notes.
-- `media` — stores paths to files; when uploading base64 the server stores files under `uploads/` and saves `/uploads/<file>` in `file_path`.
-
-How to apply schema
-- Run the SQL using psql: `psql -h <host> -U <user> -d <db> -f schema.sql`
-- Or use your migration tool (recommended for production).
-
----
-
-## Production notes & recommendations
-- Use object storage (S3/GCS) for media and pre-signed upload URLs or direct server uploads for large files.
-- Use a shared revocation store (Redis) for token blacklist when running multiple instances.
-- Add input validation (`express-validator`/Joi) to all endpoints and add tests.
-- Use HTTPS and secure cookie practices if tokens are stored in browser cookies.
-
----
-
-## Troubleshooting
-- 401 on protected routes: verify `Authorization` header and token expiry.
-- 404 for notes/folders/media: resource not found or does not belong to authenticated user.
-- If you need additional fields or different response shapes, tell me the exact JSON shape you want and I will update the API and docs.
-
----
-
-If you want a Postman collection, example curl commands, or migration scripts, I can add those next.
-# Note-Taking Backend 
-
-This document explains the API, authentication flow, media handling (base64), and examples a frontend developer needs to integrate the app.
-
-Base assumptions
-- Server base URL (development): http://localhost:3000
-- All API routes are mounted under `/api`, e.g. POST `/api/login`
-- The backend uses JWT access tokens. Send them in the Authorization header as: `Authorization: Bearer <token>`
-
-Quick start (dev)
-1. Install and start the backend on your machine:
-
-```powershell
-cd "note-taking-backend"
-npm install
-copy .env.example .env
-# edit .env to set JWT_SECRET (or use provided local .env)
-npm start
-```
-
-Authentication
-- Signup: `POST /api/signup`
-  - Body (JSON): `{ username, email, password }`
-  - Success: `201` and created user object
-
-- Login: `POST /api/login`
-  - Body (JSON): `{ email, password }`
-  - Success: `200` with `{ token, user_id, message }`
-  - Store the returned token on the client (localStorage/sessionStorage or secure cookie).
-
-- Protected requests
-  - Include header: `Authorization: Bearer <token>`
-  - If token is expired or revoked you will receive `401 Unauthorized`.
-
-- Logout: `POST /api/logout` (protected)
-  - Invalidates the token in the server's in-memory blacklist. After logout, that token will no longer be accepted by the running process.
-
-Endpoints & shapes (frontend-focused)
-
-Auth
-- `POST /api/signup`
-  - Body: `{ username, email, password }`
-  - 201 response: `{ message, user }`
-
-- `POST /api/login`
-  - Body: `{ email, password }`
-  - 200 response example:
-    ```json
-    {
-      "message": "Login successful",
-      "token": "<JWT>",
-      "user_id": 1
-    }
-    ```
-
-- `GET /api/me` (protected)
-  - Returns: `{ user_id, email }`
-
-- `POST /api/logout` (protected)
-  - Returns: `200 { message: 'Logged out' }`
-
-Notes (protected)
-- `POST /api/notes` — Create
-  - Body: `{ note_title, note_content, folder_id }`
-  - Response: `201` created note object
-
-- `GET /api/notes` — List
-  - Response: `200` array of notes
-
-- `GET /api/notes/:id` — Get single
-  - Response: note object or 404
-
-- `PUT /api/notes/:id` — Update
-  - Body: `{ note_title, note_content, folder_id }`
-  - Response: updated note
-
-- `DELETE /api/notes/:id` — Delete
-  - Response: `204`
-
-Folders (protected)
-- `POST /api/folders` `{ folder_name, parent_folder_id }`
-- `GET /api/folders`
-- `GET /api/folders/:id`
-- `PUT /api/folders/:id`
-- `DELETE /api/folders/:id`
-
-Tags (protected)
-- `POST /api/tags` `{ tag_name }` — creates or returns existing tag
-- `GET /api/tags`
-- `POST /api/notes/:noteId/tags` `{ tag_id }` — attach tag to note
-- `DELETE /api/notes/:noteId/tags/:tagId` — remove tag from note
-
-Media (base64 + file_path) (protected)
-The backend supports two ways to attach media to a note:
-
-1) Provide a `file_path` (server will store it as-is in DB).
-2) Provide `filename` and `base64` (data URL or raw base64). Server will decode and save the file to `uploads/` and store `/uploads/<file>` as `file_path` in the DB.
-
-- `POST /api/notes/:noteId/media`
-  - Body options:
-    - `{ file_path: "https://example.com/file.jpg" }`
-    - OR `{ filename: "photo.jpg", base64: "data:image/jpeg;base64,...", file_type: "image/jpeg" }`
-  - Response: created media record: `{ media_id, note_id, file_path, file_type, uploaded_at }`
-
-- `GET /api/notes/:noteId/media` — list media
-  - Query param: `?asBase64=true`
-    - Without `asBase64`: returns media rows as stored in DB.
-    - With `asBase64=true`: for local files (file_path like `/uploads/<file>`), returns `base64` field containing a `data:[mime];base64,<data>` string. External URLs return `base64: null`.
-
-- `DELETE /api/media/:id` — deletes DB record and removes local file if stored locally.
-
-Frontend integration notes & examples
-
-Uploading a file (browser) as base64 (client-side example):
-
-```javascript
-// client-side example: convert file to data URL and upload
-async function uploadFile(file, noteId, token) {
-  const reader = new FileReader();
-  return new Promise((resolve, reject) => {
-    reader.onload = async () => {
-      const base64 = reader.result; // data:[mime];base64,...
-      const resp = await fetch(`/api/notes/${noteId}/media`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
-        body: JSON.stringify({ filename: file.name, base64 })
-      });
-      if (!resp.ok) return reject(await resp.text());
-      resolve(await resp.json());
-    };
-    reader.onerror = reject;
-    reader.readAsDataURL(file);
-  });
-}
-```
-
-Listing media and rendering local base64 images:
-
-```javascript
-const resp = await fetch(`/api/notes/${noteId}/media?asBase64=true`, { headers: { Authorization: 'Bearer ' + token }});
-const media = await resp.json();
-media.forEach(m => {
-  if (m.base64) {
-    const img = document.createElement('img');
-    img.src = m.base64; // data URL
-    document.body.appendChild(img);
-  } else if (m.file_path) {
-    // external URL or stored path
-    const img = document.createElement('img');
-    img.src = m.file_path;
-    document.body.appendChild(img);
-  }
-});
-```
-
-Error handling and status codes
-- 400 Bad Request — missing/invalid input
-- 401 Unauthorized — missing/invalid/expired/revoked token
-- 404 Not Found — resource doesn't exist or doesn't belong to user
-- 500 Server Error — backend failure
-
-Security & production notes (frontend/back-end coordination)
-- Local in-memory token blacklist only works for single-process dev. For multi-instance deployments use a shared store (Redis) for revocation.
-- For production media storage: use object storage (S3/GCS) and return URLs or pre-signed upload URLs. Avoid storing large files in the database.
-- Use HTTPS; prefer secure, HttpOnly cookies for tokens in browser apps if you control both frontend and backend.
-- Consider using short-lived access tokens plus refresh tokens for UX/security.
-
-Troubleshooting
-- If protected endpoints return 401: verify the Authorization header is present and token not expired
-- If base64 returns null in `GET /api/notes/:noteId/media?asBase64=true`: the file was stored as an external URL or the local file is missing
-
-# Note-Taking Backend
-
-This backend provides authentication and CRUD endpoints for notes, folders, tags and media. Media endpoints support uploading base64-encoded files which are saved to `uploads/` locally (development).
-
-## Running locally
-
-1. Copy `.env.example` to `.env` and set `JWT_SECRET`, `JWT_EXPIRES_IN`, and `SALT_ROUNDS`.
-2. Install dependencies:
-
-```powershell
+```bash
 npm install
 ```
 
-3. Start server:
+### Step 5: Install Frontend Dependencies
 
-```powershell
+```bash
+cd frontend
+npm install
+cd ..
+```
+
+---
+
+## 🏃 Running the Application
+
+### Development Mode
+
+You'll need **two terminal windows** - one for backend, one for frontend.
+
+#### Terminal 1: Start Backend Server
+
+```bash
 npm start
 ```
 
-Server runs on port 3000 by default.
+Backend will run on: **http://localhost:3000**
 
-## Authentication
+You should see:
+```
+DATABASE_URL: Loaded
+Database config: { user: 'notes_user', host: 'localhost', port: 5432, database: 'notes_db' }
+Server listening on port 3000
+Database connected successfully at: [timestamp]
+```
 
-- POST /api/signup { username, email, password }
-- POST /api/login { email, password } => { token }
-- GET /api/me => returns current user (requires Authorization: Bearer <token>)
-- POST /api/logout => invalidates token in-memory
+#### Terminal 2: Start Frontend Server
 
-## Notes endpoints
+```bash
+cd frontend
+npm start
+# or
+npx ng serve
+```
 
-- POST /api/notes (protected) { note_title, note_content, folder_id }
-- GET /api/notes (protected)
-- GET /api/notes/:id (protected)
-- PUT /api/notes/:id (protected)
-- DELETE /api/notes/:id (protected)
+Frontend will run on: **http://localhost:4200**
 
-## Folders
+Open your browser and navigate to: **http://localhost:4200**
 
-- POST /api/folders { folder_name, parent_folder_id }
-- GET /api/folders
-- GET /api/folders/:id
-- PUT /api/folders/:id
-- DELETE /api/folders/:id
+---
 
-## Tags
+## 📁 Project Structure
 
-- POST /api/tags { tag_name } - creates or returns existing tag
-- GET /api/tags
-- POST /api/notes/:noteId/tags { tag_id } - add tag to note
-- DELETE /api/notes/:noteId/tags/:tagId - remove tag from note
+```
+note-taking-backend/
+├── frontend/                          # Angular Frontend
+│   ├── src/
+│   │   ├── app/
+│   │   │   ├── components/
+│   │   │   │   ├── dashboard/         # Main dashboard component
+│   │   │   │   ├── login/             # Login page
+│   │   │   │   ├── register/          # Registration page
+│   │   │   │   ├── notes/
+│   │   │   │   │   ├── note-editor/   # Note editor with auto-save
+│   │   │   │   │   └── note-list/     # Notes list view
+│   │   │   │   └── shared/
+│   │   │   │       └── confirmation-dialog/  # Custom modal dialogs
+│   │   │   ├── services/
+│   │   │   │   ├── auth.service.ts    # Authentication service
+│   │   │   │   ├── notes.service.ts   # Notes CRUD operations
+│   │   │   │   ├── folders.service.ts # Folders management
+│   │   │   │   └── tags.service.ts    # Tags management
+│   │   │   ├── guards/
+│   │   │   │   └── auth.guard.ts      # Route protection
+│   │   │   ├── interceptors/
+│   │   │   │   └── auth.interceptor.ts # JWT token injection
+│   │   │   ├── app.config.ts
+│   │   │   └── app.routes.ts
+│   │   ├── index.html
+│   │   ├── main.ts
+│   │   └── styles.css
+│   ├── angular.json
+│   ├── package.json
+│   └── tsconfig.json
+│
+├── routes/                            # Backend API Routes
+│   ├── auth.js                        # Authentication endpoints
+│   ├── notes.js                       # Notes CRUD endpoints
+│   ├── folders.js                     # Folders CRUD endpoints
+│   ├── tags.js                        # Tags CRUD endpoints
+│   ├── media.js                       # Media upload endpoints
+│   └── db-test.js                     # Database test endpoint
+│
+├── middleware/
+│   └── auth.js                        # JWT verification middleware
+│
+├── utils/
+│   └── tokenStore.js                  # Token blacklist management
+│
+├── uploads/                           # File uploads directory
+│
+├── .env                               # Environment variables (create this)
+├── .gitignore
+├── config.js                          # Configuration loader
+├── db.js                              # Database connection pool
+├── package.json
+├── schema.sql                         # Database schema
+├── server.js                          # Express server entry point
+└── README.md                          # This file
+```
 
-## Media (base64 upload)
+---
 
-You can attach media to a note by either passing a `file_path` (URL) or sending base64 content. Examples:
+## 🗄️ Database Schema
 
-- Upload base64:
+### Tables
 
+1. **users** - User accounts
+   - `user_id` (Primary Key)
+   - `username` (Unique)
+   - `email` (Unique)
+   - `password_hash`
+   - `created_at`
+
+2. **folders** - Organization folders
+   - `folder_id` (Primary Key)
+   - `user_id` (Foreign Key)
+   - `folder_name`
+   - `parent_folder_id` (Foreign Key - self-referencing)
+   - `created_at`
+
+3. **notes** - User notes
+   - `note_id` (Primary Key)
+   - `user_id` (Foreign Key)
+   - `folder_id` (Foreign Key)
+   - `note_title`
+   - `note_content`
+   - `created_at`
+   - `updated_at`
+
+4. **tags** - Tags for categorization
+   - `tag_id` (Primary Key)
+   - `tag_name` (Unique)
+
+5. **note_tags** - Many-to-many relationship
+   - `note_id` (Foreign Key)
+   - `tag_id` (Foreign Key)
+
+6. **media** - File attachments
+   - `media_id` (Primary Key)
+   - `note_id` (Foreign Key)
+   - `file_path`
+   - `file_type`
+   - `uploaded_at`
+
+---
+
+## 🔌 API Endpoints
+
+### Authentication
+- `POST /api/signup` - Register new user
+- `POST /api/login` - User login
+- `GET /api/me` - Get current user (protected)
+- `POST /api/logout` - Logout user (protected)
+
+### Notes
+- `GET /api/notes` - Get all user notes (protected)
+- `GET /api/notes/:id` - Get single note (protected)
+- `POST /api/notes` - Create new note (protected)
+- `PUT /api/notes/:id` - Update note (protected)
+- `DELETE /api/notes/:id` - Delete note (protected)
+
+### Folders
+- `GET /api/folders` - Get all user folders (protected)
+- `GET /api/folders/:id` - Get single folder (protected)
+- `POST /api/folders` - Create new folder (protected)
+- `PUT /api/folders/:id` - Update folder (protected)
+- `DELETE /api/folders/:id` - Delete folder (protected)
+
+### Tags
+- `GET /api/tags` - Get all tags (protected)
+- `POST /api/tags` - Create new tag (protected)
+- `POST /api/notes/:noteId/tags` - Add tag to note (protected)
+- `DELETE /api/notes/:noteId/tags/:tagId` - Remove tag from note (protected)
+
+### Media
+- `POST /api/notes/:noteId/media` - Upload file (protected)
+- `GET /api/media/:mediaId` - Get file (protected)
+- `DELETE /api/media/:mediaId` - Delete file (protected)
+
+---
+
+## 🧪 Testing
+
+### Test Database Connection
+```bash
+curl http://localhost:3000/api/db-test
+```
+
+### Test Registration
+```bash
+curl -X POST http://localhost:3000/api/signup \
+  -H "Content-Type: application/json" \
+  -d '{
+    "username": "testuser",
+    "email": "test@example.com",
+    "password": "password123"
+  }'
+```
+
+### Test Login
+```bash
+curl -X POST http://localhost:3000/api/login \
+  -H "Content-Type: application/json" \
+  -d '{
+    "email": "test@example.com",
+    "password": "password123"
+  }'
+```
+
+---
+
+## 🚀 Deployment
+
+### Frontend - Vercel
+
+1. Create account at [vercel.com](https://vercel.com)
+2. Import your GitHub repository
+3. Set Root Directory to `frontend`
+4. Deploy
+
+### Backend - Render
+
+1. Create account at [render.com](https://render.com)
+2. Create PostgreSQL database
+3. Create Web Service
+4. Add environment variables
+5. Deploy
+
+---
+
+## 🔐 Security Features
+
+- ✅ Password hashing with bcrypt (10 rounds)
+- ✅ JWT token-based authentication
+- ✅ Token blacklisting on logout
+- ✅ Protected API routes with middleware
+- ✅ CORS configuration
+- ✅ SQL injection prevention (parameterized queries)
+- ✅ Input validation
+
+---
+
+## 🐛 Troubleshooting
+
+### Backend Issues
+
+**Issue**: `Error: connect ECONNREFUSED`
+- **Solution**: Make sure PostgreSQL is running
+  ```bash
+  # Windows
+  Get-Service -Name postgresql*
+  
+  # Linux/Mac
+  sudo service postgresql status
+  ```
+
+**Issue**: `password authentication failed for user`
+- **Solution**: Check your `.env` file DATABASE_URL credentials
+
+**Issue**: `relation "users" does not exist`
+- **Solution**: Run the schema.sql file again
+
+### Frontend Issues
+
+**Issue**: `Cannot GET /api/notes`
+- **Solution**: Make sure backend is running on port 3000
+
+**Issue**: `CORS error`
+- **Solution**: Backend CORS is configured for `http://localhost:4200`
+
+**Issue**: `ng: command not found`
+- **Solution**: Install Angular CLI: `npm install -g @angular/cli`
+
+---
+
+## 📦 Dependencies
+
+### Backend
 ```json
-POST /api/notes/1/media
 {
-  "filename": "photo.jpg",
-  "base64": "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQ..."
+  "bcrypt": "^6.0.0",
+  "cors": "^2.8.5",
+  "dotenv": "^16.3.1",
+  "express": "^5.1.0",
+  "jsonwebtoken": "^9.0.2",
+  "pg": "^8.16.3"
 }
 ```
 
-Server will decode and save to `uploads/` and store the path in the DB.
-
-- List media for a note (with base64 content):
-
+### Frontend
+```json
+{
+  "@angular/core": "^19.2.0",
+  "@angular/common": "^19.2.0",
+  "@angular/router": "^19.2.0",
+  "@angular/forms": "^19.2.0",
+  "bootstrap": "^5.3.8",
+  "bootstrap-icons": "^1.13.1",
+  "rxjs": "~7.8.0",
+  "zone.js": "~0.15.0"
+}
 ```
-GET /api/notes/1/media?asBase64=true
-```
 
-This will return records with a `base64` field for locally stored files. External URLs will have `base64: null`.
+---
 
-## Notes & next steps
+## 👥 Contributors
 
-- The media storage is local and intended for development. For production use S3 or another file store.
-- The token blacklist is in-memory; for multiple instances use Redis.
-- Add validation (express-validator) and tests for production readiness.
+- **Vraj Gami** - Full Stack Development
 
+---
+
+## 📝 License
+
+This project is created for educational purposes - CPSC-271 Web Development course.
+
+---
+
+## 🙏 Acknowledgments
+
+- Angular team for the amazing framework
+- Express.js for the backend framework
+- PostgreSQL for the robust database
+- Bootstrap for UI components
+
+---
+
+## 📧 Contact
+
+For any questions or issues, please open an issue in the GitHub repository.
+
+---
+
+## 🔄 Version History
+
+- **v1.0.0** (January 2025)
+  - Initial release
+  - Full CRUD functionality
+  - Authentication system
+  - Folder and tag organization
+  - Custom confirmation dialogs
+  - Responsive design
+
+---
+
+**Happy Note Taking! 📝✨**
 
