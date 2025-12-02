@@ -3,29 +3,17 @@ const { Pool } = require('pg');
 require('dotenv').config();
 
 // Parse DATABASE_URL from .env file
-// Format: postgres://username:password@host:port/database
 const connectionString = process.env.DATABASE_URL;
 
 console.log('DATABASE_URL:', connectionString ? 'Loaded' : 'NOT FOUND');
 
-// Parse the connection string manually
-const url = new URL(connectionString);
-const config = {
-    user: url.username,
-    password: url.password,
-    host: url.hostname,
-    port: parseInt(url.port),
-    database: url.pathname.slice(1), // Remove leading slash
-};
-
-console.log('Database config:', {
-    user: config.user,
-    host: config.host,
-    port: config.port,
-    database: config.database
+// SSL configuration is MANDATORY for AWS RDS
+const pool = new Pool({
+    connectionString: connectionString,
+    ssl: {
+        rejectUnauthorized: false // This fixes the "Self Signed Certificate" error on AWS
+    }
 });
-
-const pool = new Pool(config);
 
 // Test connection on startup
 pool.query('SELECT NOW()', (err, res) => {
