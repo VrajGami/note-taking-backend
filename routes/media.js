@@ -6,9 +6,23 @@ const authMiddleware = require('../middleware/auth');
 const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
+const os = require('os'); // <--- ADDED THIS
 
-const UPLOAD_DIR = path.resolve(__dirname, '..', 'uploads');
-if (!fs.existsSync(UPLOAD_DIR)) fs.mkdirSync(UPLOAD_DIR, { recursive: true });
+// 1. DYNAMIC UPLOAD DIRECTORY
+// If on AWS Lambda, use /tmp/uploads. If local, use ./uploads
+const isLambda = !!process.env.LAMBDA_TASK_ROOT;
+const UPLOAD_DIR = isLambda 
+    ? path.join(os.tmpdir(), 'uploads') 
+    : path.resolve(__dirname, '..', 'uploads');
+
+// Ensure directory exists
+if (!fs.existsSync(UPLOAD_DIR)) {
+    try {
+        fs.mkdirSync(UPLOAD_DIR, { recursive: true });
+    } catch (e) {
+        console.error("Could not create upload directory:", e);
+    }
+}
 
 router.use(authMiddleware);
 
@@ -54,7 +68,7 @@ router.post('/notes/:noteId/media', async (req, res) => {
       }
 
       const outName = randomFilename(ext);
-      const outPath = path.join(UPLOAD_DIR, outName);
+      const outPath = path.join(UPLOAD_DIR, outName); // Uses the dynamic dir
       fs.writeFileSync(outPath, dataBuffer);
       storedPath = `/uploads/${outName}`; // store relative path
     }
@@ -86,7 +100,7 @@ router.get('/notes/:noteId/media', async (req, res) => {
     const out = await Promise.all(rows.map(async r => {
       const fp = r.file_path || '';
       if (fp.startsWith('/uploads/') || fp.startsWith('uploads/')) {
-        const local = path.join(UPLOAD_DIR, path.basename(fp));
+        const local = path.join(UPLOAD_DIR, path.basename(fp)); // Uses the dynamic dir
         try {
           const buf = fs.readFileSync(local);
           // try to infer mime from extension
@@ -95,7 +109,8 @@ router.get('/notes/:noteId/media', async (req, res) => {
           const mime = mimeMap[ext] || 'application/octet-stream';
           return { ...r, base64: `data:${mime};base64,${buf.toString('base64')}` };
         } catch (e) {
-          return { ...r, base64: null, _error: 'file not found' };
+          // If file is missing (e.g. Lambda restarted and wiped /tmp), handle gracefully
+          return { ...r, base64: null, _error: 'file not found (temp storage cleared)' };
         }
       }
       // for external URLs or unknown paths, don't fetch them; return as-is
@@ -119,7 +134,7 @@ router.delete('/media/:id', async (req, res) => {
 
     const fp = mediaRes.rows[0].file_path || '';
     if (fp.startsWith('/uploads/') || fp.startsWith('uploads/')) {
-      const local = path.join(UPLOAD_DIR, path.basename(fp));
+      const local = path.join(UPLOAD_DIR, path.basename(fp)); // Uses the dynamic dir
       try { fs.unlinkSync(local); } catch (e) { /* ignore */ }
     }
 

@@ -28,11 +28,11 @@ export interface UpdateNoteRequest {
   providedIn: 'root'
 })
 export class NotesService {
-  private readonly API_URL = 'http://localhost:3000/api';
+  private readonly API_URL = 'https://v1ebwxsdkb.execute-api.ca-central-1.amazonaws.com/default/api';
   private notesSubject = new BehaviorSubject<Note[]>([]);
   public notes$ = this.notesSubject.asObservable();
 
-  constructor(private http: HttpClient) {}
+  constructor(private http: HttpClient) { }
 
   getAllNotes(): Observable<Note[]> {
     return this.http.get<Note[]>(`${this.API_URL}/notes`)
@@ -86,7 +86,7 @@ export class NotesService {
   searchNotes(query: string): Note[] {
     const notes = this.getCurrentNotes();
     const searchTerm = query.toLowerCase();
-    return notes.filter(note => 
+    return notes.filter(note =>
       note.note_title.toLowerCase().includes(searchTerm) ||
       note.note_content.toLowerCase().includes(searchTerm)
     );

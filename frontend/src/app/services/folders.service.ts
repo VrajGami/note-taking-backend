@@ -24,11 +24,11 @@ export interface UpdateFolderRequest {
   providedIn: 'root'
 })
 export class FoldersService {
-  private readonly API_URL = 'http://localhost:3000/api';
+  private readonly API_URL = 'https://v1ebwxsdkb.execute-api.ca-central-1.amazonaws.com/default/api';
   private foldersSubject = new BehaviorSubject<Folder[]>([]);
   public folders$ = this.foldersSubject.asObservable();
 
-  constructor(private http: HttpClient) {}
+  constructor(private http: HttpClient) { }
 
   getAllFolders(): Observable<Folder[]> {
     return this.http.get<Folder[]>(`${this.API_URL}/folders`)
@@ -62,7 +62,7 @@ export class FoldersService {
       );
   }
 
-   refreshFolders(): void {
+  refreshFolders(): void {
     this.getAllFolders().subscribe();
   }
 
@@ -82,13 +82,13 @@ export class FoldersService {
   getFolderPath(folderId: number): string {
     const folders = this.getCurrentFolders();
     const folder = folders.find(f => f.folder_id === folderId);
-    
+
     if (!folder) return '';
-    
+
     if (!folder.parent_folder_id) {
       return folder.folder_name;
     }
-    
+
     const parentPath = this.getFolderPath(folder.parent_folder_id);
     return `${parentPath} / ${folder.folder_name}`;
   }
